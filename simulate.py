@@ -1,7 +1,7 @@
 import csv, sqlite3
 import numpy as np
 import matplotlib.pyplot as plt
-
+from itertools import combinations 
 
 # define sql database and cursor
 con = sqlite3.connect(":memory:")
@@ -22,23 +22,98 @@ with open('fifa_world_cup_groups_2022.csv','r') as fin:
 cur.executemany("INSERT INTO groups (team, grp) VALUES (?, ?);", to_db)
 
 # combine tables for world cup 22 teams
-cur.execute('CREATE TABLE teams22 AS SELECT t1.team, t1.grp, t2.position, t2.ranking FROM groups t1 LEFT JOIN rankings t2 ON t1.team=t2.team')
+cur.execute('CREATE TABLE teams22 AS SELECT t1.team, t1.grp, t2.position, t2.ranking, 0 AS points FROM groups t1 LEFT JOIN rankings t2 ON t1.team=t2.team')
 con.commit()
 
-# get counts of team ranks in world cup 2022
-cur.execute('SELECT ranking, count(*) FROM rankings WHERE team IN (SELECT team FROM teams22) GROUP BY ROUND(ranking/100)') 
+# get counts of team ranks
+cur.execute('''
+    SELECT t1.ranking, sum(CASE WHEN t2.team IS NOT NULL THEN 1 ELSE 0 END), 
+    sum(CASE WHEN t2.team IS NULL THEN 1 ELSE 0 END) 
+    FROM rankings t1 LEFT JOIN teams22 t2 ON t2.team=t1.team GROUP BY ROUND(t1.ranking/100)
+    ''') 
 data = np.array(cur.fetchall()).astype('int')
-ranks1 = data[:, 0]
+ranks = data[:, 0]
 counts1 = data[:, 1]
+counts2 = data[:, 2]
 
-# get counts of team ranks not in world cup 2022
-cur.execute('SELECT ranking, count(*) FROM rankings WHERE team NOT IN (SELECT team FROM teams22) GROUP BY ROUND(ranking/100)') 
-data = np.array(cur.fetchall()).astype('int')
-ranks2 = data[:, 0]
-counts2 = data[:, 1]
+# plot ranking histogram
+plt.bar(ranks, counts1, width=50,label='in world cup 2022', color='red')
+plt.bar(ranks, counts2, width=50, bottom=counts1, label='not in world cup 2022', color='green')
+plt.legend()
+#plt.show()
 
-#plt.bar(ranks1, counts1, width=50,label='In world cup')
-plt.bar(ranks2, counts2, width=50, bottom=counts2, label='Not in world cup')
-plt.show()
+# play group games
+cur.execute('SELECT DISTINCT grp FROM teams22')
+groups = cur.fetchall()
+for group in groups:
+    cur.execute('''
+        SELECT team FROM teams22 WHERE grp='{}'
+        '''.format(group[0]))
+    teams = np.array(cur.fetchall())[:, 0]
+    for pair in combinations(teams, 2):
+        winner = np.random.choice(pair, 1)[0]
+        cur.execute('''
+        UPDATE teams22 SET points=points + 3 WHERE team='{}'
+        '''.format(winner))
+        con.commit()
+
+# define gorup results
+pos = {}
+for group in groups:
+    grp = group[0]
+    cur.execute('''SELECT team FROM teams22 WHERE grp='{}' ORDER BY points'''.format(grp))
+    results = cur.fetchall()
+    pos['1'+grp] = results[0][0]
+    pos['2'+grp] = results[1][0]
+    pos['3'+grp] = results[2][0]
+    pos['4'+grp] = results[3][0]
+
+# set round of 16
+r16 = []
+r16.append( (pos['1A'],  pos['2B']) )
+r16.append( (pos['1C'],  pos['2D']) )
+r16.append( (pos['1E'],  pos['2F']) )
+r16.append( (pos['1G'],  pos['2H']) )
+r16.append( (pos['1B'],  pos['2A']) )
+r16.append( (pos['1D'],  pos['2C']) )
+r16.append( (pos['1F'],  pos['2E']) )
+r16.append( (pos['1H'],  pos['2G']) )
+
+# play round of 16
+r16_winners = []
+for pair in r16:
+    winner = np.random.choice(pair, 1)[0]
+    r16_winners.append(winner)
+
+# set quarter final
+quarter = []
+quarter.append( (r16_winners[0], r16_winners[1]) )
+quarter.append( (r16_winners[2], r16_winners[3]) )
+quarter.append( (r16_winners[4], r16_winners[5]) )
+quarter.append( (r16_winners[6], r16_winners[7]) )
+
+# play quarter final
+quarter_winners = []
+for pair in quarter:
+    winner = np.random.choice(pair, 1)[0]
+    quarter_winners.append(winner)
+
+# set semi-final
+sf = []
+sf.append( (quarter_winners[0], quarter_winners[1]) )
+sf.append( (quarter_winners[2], quarter_winners[3]) )
+
+# play semi-final
+sf_winners = []
+for pair in sf:
+    winner = np.random.choice(pair, 1)[0]
+    sf_winners.append(winner)
+
+# set final
+final = (sf_winners[0], sf_winners[1])
+
+# play final
+winner = np.random.choice(final, 1)[0]
+print('winner: ', winner)
 
 con.close()
