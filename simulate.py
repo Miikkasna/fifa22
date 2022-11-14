@@ -7,7 +7,7 @@ from itertools import combinations
 con = sqlite3.connect(":memory:")
 cur = con.cursor()
 
-# create tmep tables
+# create tables
 cur.execute("CREATE TABLE rankings (position int, team text, ranking real);")
 cur.execute("CREATE TABLE groups (team text, grp text);")
 # insert rankings data
