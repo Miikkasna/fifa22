@@ -42,16 +42,24 @@ plt.bar(ranks, counts2, width=50, bottom=counts1, label='not in world cup 2022',
 plt.legend()
 #plt.show()
 
+# get rankings
+cur.execute('SELECT team, ranking FROM teams22')
+data = cur.fetchall()
+rankings = {}
+for row in data:
+    rankings[row[0]] = row[1]
+
 # play group games
 cur.execute('SELECT DISTINCT grp FROM teams22')
-groups = cur.fetchall()
+groups = np.array(cur.fetchall())[:, 0]
 for group in groups:
     cur.execute('''
         SELECT team FROM teams22 WHERE grp='{}'
-        '''.format(group[0]))
+        '''.format(group))
     teams = np.array(cur.fetchall())[:, 0]
     for pair in combinations(teams, 2):
-        winner = np.random.choice(pair, 1)[0]
+        winner = pair[0] if rankings[pair[0]] > rankings[pair[1]] else pair[1]
+
         cur.execute('''
         UPDATE teams22 SET points=points + 3 WHERE team='{}'
         '''.format(winner))
@@ -60,13 +68,12 @@ for group in groups:
 # define gorup results
 pos = {}
 for group in groups:
-    grp = group[0]
-    cur.execute('''SELECT team FROM teams22 WHERE grp='{}' ORDER BY points'''.format(grp))
+    cur.execute('''SELECT team FROM teams22 WHERE grp='{}' ORDER BY points DESC, ranking DESC'''.format(group))
     results = cur.fetchall()
-    pos['1'+grp] = results[0][0]
-    pos['2'+grp] = results[1][0]
-    pos['3'+grp] = results[2][0]
-    pos['4'+grp] = results[3][0]
+    pos['1'+group] = results[0][0]
+    pos['2'+group] = results[1][0]
+    pos['3'+group] = results[2][0]
+    pos['4'+group] = results[3][0]
 
 # set round of 16
 r16 = []
@@ -78,11 +85,10 @@ r16.append( (pos['1B'],  pos['2A']) )
 r16.append( (pos['1D'],  pos['2C']) )
 r16.append( (pos['1F'],  pos['2E']) )
 r16.append( (pos['1H'],  pos['2G']) )
-
 # play round of 16
 r16_winners = []
 for pair in r16:
-    winner = np.random.choice(pair, 1)[0]
+    winner = pair[0] if rankings[pair[0]] > rankings[pair[1]] else pair[1]
     r16_winners.append(winner)
 
 # set quarter final
@@ -91,29 +97,51 @@ quarter.append( (r16_winners[0], r16_winners[1]) )
 quarter.append( (r16_winners[2], r16_winners[3]) )
 quarter.append( (r16_winners[4], r16_winners[5]) )
 quarter.append( (r16_winners[6], r16_winners[7]) )
-
 # play quarter final
 quarter_winners = []
 for pair in quarter:
-    winner = np.random.choice(pair, 1)[0]
+    winner = pair[0] if rankings[pair[0]] > rankings[pair[1]] else pair[1]
     quarter_winners.append(winner)
 
 # set semi-final
 sf = []
 sf.append( (quarter_winners[0], quarter_winners[1]) )
 sf.append( (quarter_winners[2], quarter_winners[3]) )
-
 # play semi-final
 sf_winners = []
+sf_losers = []
 for pair in sf:
-    winner = np.random.choice(pair, 1)[0]
+    if rankings[pair[0]] > rankings[pair[1]]:
+        winner = pair[0] 
+        loser = pair[1]  
+    else:
+        winner = pair[1]
+        loser = pair[0] 
     sf_winners.append(winner)
+    sf_losers.append(loser)
+
+# set bronze match
+pair = (sf_losers[0], sf_losers[1])
+# play bronze match
+if rankings[pair[0]] > rankings[pair[1]]:
+    winner = pair[0] 
+    loser = pair[1]  
+else:
+    winner = pair[1]
+    loser = pair[0]
+print('bronze:', winner)
 
 # set final
-final = (sf_winners[0], sf_winners[1])
-
+pair = (sf_winners[0], sf_winners[1])
 # play final
-winner = np.random.choice(final, 1)[0]
-print('winner: ', winner)
+if rankings[pair[0]] > rankings[pair[1]]:
+    winner = pair[0] 
+    loser = pair[1]  
+else:
+    winner = pair[1]
+    loser = pair[0] 
+
+print('gold: ', winner)
+print('silver: ', loser)
 
 con.close()
