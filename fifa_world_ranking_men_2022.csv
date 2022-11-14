@@ -1,4 +1,4 @@
-position;Team;ranking
+position;team;ranking
 1;Brazil;1841.3
 2;Belgium;1816.71
 3;Argentina;1773.88
@@ -43,10 +43,10 @@ position;Team;ranking
 42;Norway;1473.04
 43;Cameroon;1471.44
 44;Ecuador;1464.39
-45;Türkiye;1460.14
+45;Tï¿½rkiye;1460.14
 46;Mali;1448.85
 47;Paraguay;1448.77
-48;Côte d'Ivoire;1443.06
+48;Cï¿½te d'Ivoire;1443.06
 49;Republic of Ireland;1440.19
 50;Qatar;1439.89
 51;Saudi Arabia;1437.78
@@ -84,7 +84,7 @@ position;Team;ranking
 83;Guinea;1290.47
 84;Jordan;1289.99
 85;Bahrain;1280.64
-86;Curaçao;1278.64
+86;Curaï¿½ao;1278.64
 87;Haiti;1269.07
 88;Zambia;1267.41
 89;Uganda;1260.69
@@ -184,7 +184,7 @@ position;Team;ranking
 183;Mongolia;913.55
 184;Dominica;911.51
 185;Bhutan;910.96
-186;São Tomé and Príncipe;908.18
+186;Sï¿½o Tomï¿½ and Prï¿½ncipe;908.18
 187;Laos;905.51
 188;American Samoa;900.27
 189;Cook Islands;899.33
